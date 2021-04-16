@@ -6,6 +6,6 @@ Mini project in the scope of advanced machine learning class.
 ### Récapitulatif:
 Présentation des données et attribution des tâches. 
 ### Job à faire
-Everyone: Commenter le code
-Nessreddine: Commencer à tester les algorithmes (LLE & MLLE) sur un data set complet. 
-Arnaud: Tester des techniques pour prédire les data points manquants (Support Vector Regression)
+Everyone: Commenter le code \\
+Nessreddine: Commencer à tester les algorithmes (LLE & MLLE) sur un data set complet. \\
+Arnaud: Tester des techniques pour prédire les data points manquants (Support Vector Regression) \\
