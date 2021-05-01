@@ -35,7 +35,13 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
-# Jupyter notebook #
+# cache #
+#########
 .pyc
 # Folders #
+###########
 __pycache__/
+img_align_celeba/
+# Other files #
+###############
+data_frame.csv
