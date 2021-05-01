@@ -5,7 +5,7 @@ import matplotlib as plt
 import cv2
 import os
 
-move = True
+move = False
 Linux = False
 nb_samples = 5000
 # Import the classes associated to each image
