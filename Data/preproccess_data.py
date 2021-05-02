@@ -8,11 +8,14 @@ import os
 move = False
 Linux = False
 nb_samples = 5000
+forbidden = [str(i) + ".jpg" for i in range(130822,130841)]
 # Import the classes associated to each image
 data_attr = pd.read_csv("../Data/list_attr_celeba.csv")
+for forbid in forbidden:
+    data_attr = data_attr[data_attr["Path"] != forbid]
 
 # Class selected for the study
-Class_selected = ["Eyeglasses","Wearing_Hat","Wavy_Hair","Goatee"]
+Class_selected = ["Eyeglasses","Wearing_Hat","Wearing_Necklace","Goatee"]
 nb_classes = len(Class_selected)
 data_class = [] # List where we will store a subset containing each class
 # For each class extract all the data points
@@ -52,9 +55,9 @@ if move:
         final_folder = "selected_images\\"
     for i,img_path in enumerate(Image_list):
         if Linux:
-            cmd = "mv " + initial_folder + img_path + " " + final_folder + img_path
+            cmd = "cp " + initial_folder + img_path + " " + final_folder + img_path
         else:
-            cmd = "move " + initial_folder + img_path + " " + final_folder + img_path
+            cmd = "copy " + initial_folder + img_path + " " + final_folder + img_path
         os.system(cmd)
         if (i+1)%10 == 0:
             print(i+1," images has been moved into the right folder")
@@ -67,6 +70,7 @@ path_to_img = ["selected_images/" + path_img for path_img in Image_list]
 img_tensor = torch.empty(nb_samples,1,218,178)
 
 for i,path_img in enumerate(path_to_img):
+    print(path_img)
     gray = cv2.cvtColor(cv2.imread(path_img), cv2.COLOR_BGR2GRAY).astype(float)/255 # gray scale image
     assert(gray.shape == (218,178))
     img_tensor[i,0,:,:] = torch.from_numpy(gray)
