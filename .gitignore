@@ -42,6 +42,7 @@ Thumbs.db
 ###########
 __pycache__/
 img_align_celeba/
+spambase/
 # Other files #
 ###############
 data_frame.csv
