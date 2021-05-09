@@ -49,6 +49,7 @@ class Assessment():
         self.k = k
         self.run = run 
         self.KNN_neigh = KNN_neigh
+        self.seed = seed
         if check:
             self.sanity_check()
         self.x , self.y = np.meshgrid(self.range_compo, self.range_neighbors)
@@ -58,7 +59,6 @@ class Assessment():
         self.KNN_accu_std = np.empty_like(self.x).astype(float)
         self.KNN_F1_std = np.empty_like(self.x).astype(float)
         self.time_perf = []
-        self.seed = 0
 
     def reset(self):
         self.time_perf = []
@@ -228,7 +228,7 @@ class Assessment():
             mean_err = np.mean(err)
             recon_err_np[recon_err_np[:,2] == neighbors,0] /= mean_err
         columns =  ["Cumulative sum of eigenvalues (normalized)",
-                    "Eigenvalues index",
+                    "Eigenvalue index",
                     "Number of neighbors"]
         recon_err_pd = pd.DataFrame(recon_err_np,columns=columns)
         ax = fig.add_subplot(1,1,1)

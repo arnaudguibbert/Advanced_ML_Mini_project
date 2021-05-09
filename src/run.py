@@ -4,10 +4,10 @@ import seaborn as sns
 from utils import split_two, Assessment
 
 # Choose what you want to run
-hyperparams_search = False
-best_neighbors_LLE_full = 200
-best_neighbors_MLLE_full = 200
-best_components_MLLE_full = 6
+hyperparams_search = True
+best_neighbors_LLE_full = None
+best_neighbors_MLLE_full = None
+best_components_MLLE_full = None
 best_neighbors_LLE_semi = None
 best_neighbors_MLLE_semi = None
 best_components_MLLE_semi = None
@@ -15,12 +15,12 @@ semi_data_set = False
 full_data_set = True
 
 # Define the parameters for the comparison
-san_check = False 
+san_check = False
 k = 5
 run = 1
 KNN_neigh = 10
-min_components, max_components, step_components = 1,5,1
-min_neigh, max_neigh, step_neigh = 100,251,50
+min_components, max_components, step_components = 1,8,1
+min_neigh, max_neigh, step_neigh = 25,501,25
 
 # Let's the code do the rest
 sns.set_style("darkgrid")
