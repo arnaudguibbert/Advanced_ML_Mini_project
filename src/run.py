@@ -4,28 +4,30 @@ import seaborn as sns
 from utils import split_two, Assessment
 
 # Choose what you want to run
-hyperparams_search = False
-best_neighbors_LLE_full = 500
-best_neighbors_MLLE_full = 150
-best_components_MLLE_full = 4
+hyperparams_search = True
+best_neighbors_LLE_full = None
+best_neighbors_MLLE_full = None
+best_components_MLLE_full = None
 best_neighbors_LLE_semi = None
 best_neighbors_MLLE_semi = None
 best_components_MLLE_semi = None
-semi_data_set = False
+semi_data_set = True
 full_data_set = True
 
 # Define the parameters for the comparison
-san_check = False
+san_check = True
 k = 5
 run = 1
 KNN_neigh = 10
 min_components, max_components, step_components = 1,8,1
-min_neigh, max_neigh, step_neigh = 25,501,25
+min_neigh_LLE, max_neigh_LLE, step_neigh_LLE = 25,801,25
+min_neigh_MLLE, max_neigh_MLLE, step_neigh_MLLE = 15,451,15
 
 # Let's the code do the rest
 sns.set_style("darkgrid")
 range_components = np.arange(min_components,max_components,step_components)
-range_neighbors = np.arange(min_neigh,max_neigh,step_neigh)
+range_neighbors_LLE = np.arange(min_neigh_LLE,max_neigh_LLE,step_neigh_LLE)
+range_neighbors_MLLE = np.arange(min_neigh_MLLE,max_neigh_MLLE,step_neigh_MLLE)
 
 print("Import the data set \n")
 # Import the data set 
@@ -46,8 +48,8 @@ if full_data_set:
     print("Evaluation on the full data set, Initialization of the objects \n")
 
     # Initialize the objects
-    LLE_algo = Assessment(dataset,range_components,range_neighbors,k=k,run=run,KNN_neigh=KNN_neigh,check=san_check)
-    MLLE_algo = Assessment(dataset,range_components,range_neighbors,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",check=san_check)
+    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,check=san_check)
+    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",check=san_check)
 
     if hyperparams_search:
         ############ LLE ############
@@ -92,8 +94,8 @@ if semi_data_set:
     dataset = split_two(data_np)
 
     # Initialize the objects
-    LLE_algo = Assessment(dataset,range_components,range_neighbors,k=k,run=run,KNN_neigh=KNN_neigh)
-    MLLE_algo = Assessment(dataset,range_components,range_neighbors,k=k,run=run,KNN_neigh=KNN_neigh,method="modified")
+    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,san_check=True)
+    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",san_check=True)
 
     if hyperparams_search:
         ############ LLE ############

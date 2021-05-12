@@ -14,31 +14,76 @@ import plotly.express as px
 
 
 def split_two(data):
-    classes = np.unique(data[:,0])
+    """
+    Goal:
+    Split randomly the data into two small subsets and keep only the fisrt one
+    preserve the class distribution
+    Inputs:
+    data = np.ndarray - size Nx(D+1) (N number of data points, D dimension of the data points)
+           the first column of the data shall be the classes
+    Outputs:
+    final_data = np.ndarray - size N//2xD (N number of data points, D dimension of the data points)
+                 first subset
+    """
+    classes = np.unique(data[:,0]) # Extract the classes
     final_data = []
     for myclass in classes:
-        data_class = data[data[:,0] == myclass]
-        nb_data = data_class.shape[0]
-        permu = np.random.permutation(nb_data)
-        data_class = data_class[permu]
+        data_class = data[data[:,0] == myclass] # Get the data of the class
+        nb_data = data_class.shape[0] # Number of points
+        permu = np.random.permutation(nb_data) # Permutation of the indexes
+        data_class = data_class[permu] # Shuffle the data
         subsets = np.array_split(data_class,2,axis=0)
-        final_data.append(subsets[0])
-    final_data = np.concatenate(final_data,axis=0)
+        final_data.append(subsets[0]) 
+    final_data = np.concatenate(final_data,axis=0) # Concatenate the data set of each class
     return final_data
 
 def normalize(data,mean=None,std=None):
+    """
+    Goal:
+    Normalize the data - idest substracting the mean, divide by the standard deviation
+    Inputs:
+    data = np.ndarray - size Nx(D+1) (N number of data points, D dimension of the data points)
+           the first column of the data shall be the classes
+    mean = np.ndarray - size 1xD (D dimension of the data points)
+           if the mean vector is passed, then it will directly use this mean vector instead of computing it
+    std = np.ndarray - size 1xD (D dimension of the data points)
+          if the std vector is passed, then it will directly use this std vector instead of computing it
+    Outputs:
+    data = np.ndarray - size Nx(D+1) (N number of data points, D dimension of the data points)
+           Normalized data
+    mean = np.ndarray - size 1xD (D dimension of the data points)
+           Mean of the data, or mean passed as argument
+    std = np.ndarray - size 1xD (D dimension of the data points)
+          standard deviation of the data, or std passed as argument
+    """
     if mean is None:
-        mean = np.mean(data[:,1:],axis=0,keepdims=True)
+        mean = np.mean(data[:,1:],axis=0,keepdims=True) # Compute the mean
     if std is None: 
-        std = np.std(data[:,1:],axis=0,keepdims=True)
-    norm_data = data.copy()
-    norm_data[:,1:] = (data[:,1:] - mean)/std
+        std = np.std(data[:,1:],axis=0,keepdims=True) # Compute the std
+    norm_data = data.copy() 
+    norm_data[:,1:] = (data[:,1:] - mean)/std # Normalize
     return norm_data, mean, std
 
 class Assessment():
 
     def __init__(self,data,range_compo,range_neighbors,
-                 method='standard',k=3,run=3,norm=True,KNN_neigh=10,check=True,seed=0):
+                 method='standard',k=3,run=1,norm=True,KNN_neigh=10,check=True,seed=0):
+        """
+        Goal:
+        Inputs:
+        data = np.ndarray - size Nx(D+1) (N number of data points, D dimension of the data points)
+               the first column of the data shall be the classes 
+        range_compo = np.ndarray int - array of the component for which you want to assess the algorithm
+        range_neighbors = np.ndarray int - array of the neighbors for which you want to assess the algorithm (hyperparameter)
+        method = string - method to be used "standard" -> LLE | "modified" -> MLLE
+        k = int - parameter for the cross k validation for KNN
+        run = int - number of time you rerun the dimensionality reduction
+        norm = Boolean - specify if you want to normalize the data
+        KNN_neigh = int - number of neighbors to use for the KNN metric
+        check = Boolean - Perform a sanity check if set to True
+        seed = int - seed for the random state of the eigen_solver to get reproducibility
+        Outputs:
+        """
         warnings.filterwarnings('ignore')
         self.method = method
         self.range_compo = range_compo
@@ -53,14 +98,22 @@ class Assessment():
         if check:
             self.sanity_check()
         self.x , self.y = np.meshgrid(self.range_compo, self.range_neighbors)
-        self.recon_error = []
+        self.recon_error = [] # The reconstruction error is stored here
+        # The KNN metric will be stored there
         self.KNN_accu = np.empty_like(self.x).astype(float)
         self.KNN_F1 = np.empty_like(self.x).astype(float)
         self.KNN_accu_std = np.empty_like(self.x).astype(float)
         self.KNN_F1_std = np.empty_like(self.x).astype(float)
+        # The time performances will be stored there
         self.time_perf = []
 
     def reset(self):
+        """
+        Goal:
+        Reset the attributes of the instance
+        Inputs:
+        Outputs:
+        """
         self.time_perf = []
         self.recon_error = []
         self.KNN_accu = np.empty_like(self.x).astype(float)
@@ -69,24 +122,40 @@ class Assessment():
         self.KNN_F1_std = np.empty_like(self.x).astype(float)
 
     def crossksets(self,data):
-        classes = np.unique(data[:,0])
+        """
+        Goal:
+        Generate k different training/testing sets using cross-k-validation method
+        Preserve the classes distribution for each set
+        Inputs:
+        data = np.ndarray - size Nx(D+1) (N number of data points, D dimension of the data points)
+               the first column of the data shall be the classes 
+        Outputs:
+        """
+        classes = np.unique(data[:,0]) # Get the classes
         sets = [np.empty((0,data.shape[1])) for i in range(self.k)]
-        train_sets = []
-        test_sets = []
+        train_sets = [] # Training sets will be stored here
+        test_sets = [] # Testing sets will be stored here
         for myclass in classes:
             data_class = data[data[:,0] == myclass]
             nb_data = data_class.shape[0]
-            permu = np.random.permutation(nb_data)
-            data_class = data_class[permu]
+            permu = np.random.permutation(nb_data) # Shuffle the indexes
+            data_class = data_class[permu] # Shuffle the data
             subsets = np.array_split(data_class,self.k,axis=0)
             sets = [np.concatenate((sets[i],subsets[i]),axis=0) for i in range(self.k)]
         for i in range(self.k):
             cp_set = sets.copy()
+            # Select one set to be the testing set
             test_sets.append(cp_set.pop(i))
+            # Concatenate the other ones to get the training set
             train_sets.append(np.concatenate(cp_set,axis=0))
         return train_sets, test_sets 
 
     def SVM_metric(self,train_set,test_set):
+        """
+        Goal:
+        Inputs:
+        Outputs:
+        """
         X_train, y_train = train_set[:,1:], train_set[:,0]
         X_test, y_test = test_set[:,1:], test_set[:,0]
         classifier = SVC().fit(X_train,y_train)
@@ -96,24 +165,45 @@ class Assessment():
         return 100*accuracy, F1_measure
 
     def KNN_metric(self,train_set,test_set):
-        X_train, y_train = train_set[:,1:], train_set[:,0]
-        X_test, y_test = test_set[:,1:], test_set[:,0]
+        """
+        Goal:
+        Given a training set and a testing set, returns the accuracy and the F1-measure
+        on the testing set
+        Inputs:
+        train_set = np.ndarray - size NtrainxD (Ntrain number of data points for training, D dimension of the data points)
+        test_set = np.ndarray - size NtestxD (Ntest number of data points for testing, D dimension of the data points)
+        Outputs:
+        accuracy = float - Accuracy on the testing set
+        F1_measure = float - F1 measure on the testing set
+        """
+        X_train, y_train = train_set[:,1:], train_set[:,0] # Get the data points and labels for training
+        X_test, y_test = test_set[:,1:], test_set[:,0] # Get the data points and labels for testing
+        # Initialize the classifier 
         classifier = KNN(n_neighbors=self.KNN_neigh).fit(X_train,y_train)
-        accuracy = classifier.score(X_test,y_test)
-        y_pred = classifier.predict(X_test)
-        F1_measure = f1_score(y_test,y_pred)
+        accuracy = classifier.score(X_test,y_test) # Compute accuracy on training set
+        y_pred = classifier.predict(X_test) 
+        F1_measure = f1_score(y_test,y_pred) # Compute F1 measure
         return 100*accuracy, F1_measure
 
     def sanity_check(self):
+        """
+        Goal:
+        Check that for each neighbors in range_neighbors, the dimensionality reduction is well performed
+        actually because of the eigensolvers, sometimes the build in function is not able to compute
+        the quantity of interest.
+        Inputs:
+        Outputs:
+        """
         print("Sanity check launched")
-        if self.norm:
+        if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
         else:
             mydata = self.data.copy()
-        index_remove = []
+        index_remove = [] # Neighbors to remove
         for j,neighbors in enumerate(self.range_neighbors):
             print("Sanity check for neighbors = ",neighbors)
             try:
+                # Try to perform dimensionality reduction with arpack solver
                 embedding = LLE(n_components=4,
                             n_neighbors=neighbors,
                             method=self.method,
@@ -123,21 +213,31 @@ class Assessment():
                 embedding.fit(mydata[:,1:])
             except ValueError:
                 try:
+                    # If fail try to perform dimensionality reduction with dense solver
                     embedding = LLE(n_components=4,
                                 n_neighbors=neighbors,
                                 method=self.method,
                                 eigen_solver="dense")
                     embedding.fit(mydata[:,1:])
                 except ValueError:
+                    # If it fails remove the neighors from the list
                     index_remove.append(j)
                     print("Problem matrix totally singular with neighbors = ",neighbors)
         self.range_neighbors = np.delete(self.range_neighbors,index_remove)
 
     def find_hyper(self):
-        if self.norm:
+        """
+        Goal:
+        Perform a grid search on range_neighbors x range_compo. 
+        On each position compute the reconstruction error and an estimation of the other metrics
+        Inputs:
+        Outputs:
+        """
+        if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
         else:
             mydata = self.data.copy()
+        # Header fo the logs
         header = ["Components",
                   "Neighbors",
                   "Run",
@@ -148,55 +248,63 @@ class Assessment():
                   "STD F1",
                   "Wall clock time"]
         subheader = ["-"*len(head) for head in header]
+        # Display the header
         print(self.row_format.format(*header))
         print(self.row_format.format(*subheader))
         for j,neighbors in enumerate(self.range_neighbors):
             for i,components in enumerate(self.range_compo):
-                if neighbors < components and self.method == 'modified':
+                # For MLLE neighbors > components
+                if neighbors <= components and self.method == 'modified':
                     self.recon_error.append([1e20,components,neighbors])
                     self.KNN_F1_std[j,i] = 0
                     self.KNN_accu_std[j,i] = 0
                     self.KNN_F1[j,i] = 0
                     self.KNN_accu[j,i] = 0
                     continue
-                #reco_error_run = np.empty(self.run)
                 KNN_F1_run = np.empty(self.run)
                 KNN_accu_run = np.empty(self.run)
                 KNN_F1_std_run = np.empty(self.run)
                 KNN_accu_std_run = np.empty(self.run)
                 for run_index in range(self.run):
                     try:
-                        start = perf_counter()
+                        # Try with "arpack solver"
+                        start = perf_counter() # start the chrono
                         embedding = LLE(n_components=components,
                                     n_neighbors=neighbors,
                                     method=self.method,
                                     max_iter=200,
                                     random_state=self.seed,
                                     eigen_solver="auto")
-                        reduc_data = embedding.fit_transform(mydata[:,1:])
-                        end = perf_counter()
+                        reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
+                        end = perf_counter() # Stop the chrono
                     except ValueError:
-                        start = perf_counter()
+                        start = perf_counter() # Start the chrono
+                        # else Try with "dense" solver 
                         embedding = LLE(n_components=components,
                                     n_neighbors=neighbors,
                                     method=self.method,
                                     eigen_solver="dense")
-                        reduc_data = embedding.fit_transform(mydata[:,1:])
-                        end = perf_counter()
-                    elapsed = end - start
-                    #reco_error_run[run_index] = embedding.reconstruction_error_
-                    self.time_perf.append([elapsed,components,neighbors])
+                        reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
+                        end = perf_counter() # Stop the chrono
+                    elapsed = end - start # Compute the elapsed time
+                    self.time_perf.append([elapsed,components,neighbors]) # Store the time performance
+                    # Store the reconstruction error
                     self.recon_error.append([embedding.reconstruction_error_,components,neighbors])
+                    # Readd the classes to the reduced data
                     reduc_data = np.concatenate((mydata[:,[0]],reduc_data),axis=1)
+                    # Get the k pairs of train/test sets
                     train_sets, test_sets = self.crossksets(reduc_data)
-                    accu_temp_KNN = np.empty(self.k)
-                    F1_temp_KNN = np.empty(self.k)
-                    for s,train in enumerate(train_sets):
+                    accu_temp_KNN = np.empty(self.k) # Initialize the accuracy vector
+                    F1_temp_KNN = np.empty(self.k) # Initialize the F1 vector
+                    for s,train in enumerate(train_sets): # Compute k times the metrics on different data set
                         accu_temp_KNN[s], F1_temp_KNN[s] = self.KNN_metric(train,test_sets[s])
-                    KNN_accu_run[run_index] = np.mean(accu_temp_KNN)
+                    # Compute the means
+                    KNN_accu_run[run_index] = np.mean(accu_temp_KNN) 
                     KNN_F1_run[run_index] = np.mean(F1_temp_KNN)
+                    # Compute the standard deviations
                     KNN_accu_std_run[run_index] = np.std(accu_temp_KNN)
                     KNN_F1_std_run[run_index] = np.std(F1_temp_KNN)
+                    # Row to be displayed
                     row = [components,
                            neighbors,
                            run_index,
@@ -206,36 +314,48 @@ class Assessment():
                            round(KNN_accu_std_run[run_index],2),
                            round(KNN_F1_std_run[run_index],2),
                            round(elapsed,1)]
+                    # Display the row
                     print(self.row_format.format(*row))
-                #self.recon_error.append([float(np.mean(reco_error_run)),components,neighbors])
+                # Compute the mean of the metrics over different run for the space if run = 1 does not change anything
                 self.KNN_F1_std[j,i] = np.mean(KNN_F1_std_run)
                 self.KNN_accu_std[j,i] = np.mean(KNN_accu_std_run)
                 self.KNN_F1[j,i] = np.mean(KNN_F1_run)
                 self.KNN_accu[j,i] = np.mean(KNN_accu_run)
 
     def plot_cumulative_error(self,title,figsize=[12,7],save_file=None):
-        fig = plt.figure(figsize=figsize)
-        recon_err_np = np.array(self.recon_error)
-        recon_err_np[recon_err_np[:,0] < 0,0] *= -1
-        line_keep = min(self.range_neighbors.shape[0],8)
+        """
+        Goal:
+        Plot the reconstruction error curve for different value of the hyperparameter (number of neighbors)
+        Inputs:
+        title = string - title of the graph
+        figsize = list of size 2 - size of the graph
+        save_file = string - save the file at "figures/save_file.svg"
+        Outputs:
+        """
+        fig = plt.figure(figsize=figsize) # Initialize the figure
+        recon_err_np = np.array(self.recon_error) 
+        recon_err_np[recon_err_np[:,0] < 0,0] *= -1 # Correct the instabilities of the eigen solvers
+        # Only 8 hyperparameter values are kept for the figure
+        line_keep = min(self.range_neighbors.shape[0],8) 
+        # Perform a linspace to know which values to keep
         small_subset_neighbors = np.linspace(0,self.range_neighbors.shape[0]-1,
                                              line_keep,dtype=int)
+        # Extract the values to preserve
         small_range_neighbors = self.range_neighbors[small_subset_neighbors]
-        print(small_range_neighbors)
+        # Retain the samples that have the values retained for the hyperparameter
         recon_err_np = recon_err_np[np.isin(recon_err_np[:,2],small_range_neighbors)]
-        for neighbors in small_range_neighbors:
-            err = recon_err_np[(recon_err_np[:,2] == neighbors) & (recon_err_np[:,1] == self.range_compo[-1]),0]
-            mean_err = np.mean(err)
-            recon_err_np[recon_err_np[:,2] == neighbors,0] /= mean_err
-        columns =  ["Cumulative sum of eigenvalues (normalized)",
+        columns =  ["Cumulative sum of eigenvalues",
                     "Eigenvalue index",
                     "Number of neighbors"]
+        # Convert to pandas 
         recon_err_pd = pd.DataFrame(recon_err_np,columns=columns)
         ax = fig.add_subplot(1,1,1)
+        # Set darkgrid style
         sns.set_style("darkgrid")
+        # Plot the graph
         sns.lineplot(data=recon_err_pd,
                      x="Eigenvalue index",
-                     y="Cumulative sum of eigenvalues (normalized)",
+                     y="Cumulative sum of eigenvalues",
                      hue="Number of neighbors",
                      style="Number of neighbors",
                      palette=sns.color_palette("hls", line_keep),
@@ -253,11 +373,24 @@ class Assessment():
         plt.close("all")
 
     def generate_pairplot(self,neighbors,components,title,components_to_show=4,save_file=None):
-        if self.norm:
+        """
+        Goal:
+        Generate a pairplot to visualize the distribution of the points
+        after having performed the dimensionelity reduction
+        Inputs:
+        neighbors = int - number of neighbors to use for the dimensionality reduction
+        components = int - number of components to use for the dimensionality reduction
+        title = string - title of the graph 
+        components_to_show = int - number of components to show on the pairplot
+        save_file = string - save the file at "figures/save_file.svg"
+        Outputs:
+        """
+        if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
         else:
             mydata = self.data.copy()
         try:
+            # Try with arparck solver
             embedding = LLE(n_components=components,
                         n_neighbors=neighbors,
                         method=self.method,
@@ -266,17 +399,22 @@ class Assessment():
                         eigen_solver="auto")
             reduc_data = embedding.fit_transform(mydata[:,1:])
         except ValueError:
+            # Try with eigen solver 
             embedding = LLE(n_components=components,
                         n_neighbors=neighbors,
                         method=self.method,
                         eigen_solver="dense")
             reduc_data = embedding.fit_transform(mydata[:,1:])
+        # Get the number of dimension
         nb_features = reduc_data.shape[1]
+        # Add the classes
         reduc_data = np.concatenate((mydata[:,[0]],reduc_data),axis=1)
         columns = ["Class"] + ["Component " + str(i) for i in range(1,nb_features+1)]
+        # Convert to pandas data frame and keep only some components
         data_pd = pd.DataFrame(reduc_data,columns=columns).iloc[:,:components_to_show+1] 
         sns.set_style("darkgrid")
         sns.color_palette("tab10")
+        # Generate the pairplot
         pairplot = sns.pairplot(data_pd,hue="Class",palette="tab10")
         handles = pairplot._legend_data.values()
         labels = ['Not Spam', 'Spam']
@@ -294,6 +432,11 @@ class Assessment():
         plt.close('all')
 
     def generate_3Dplot(self,neighbors,title,components=3):
+        """
+        Goal:
+        Inputs:
+        Outputs:
+        """
         if self.norm:
             mydata,_,_ = normalize(self.data)
         else:
@@ -325,12 +468,22 @@ class Assessment():
         fig.show()
 
     def plot_time_perf(self,title,save_file=None):
-        fig = plt.figure(figsize=[12,7])
+        """
+        Goal:
+        Plot the time performances with respect to the hyperparameter value (number of neighbors)
+        Inputs:
+        title = string - title of the graph 
+        save_file = string - save the file at "figures/save_file.svg"
+        Outputs:
+        """
+        fig = plt.figure(figsize=[12,7]) # Create the figure
         ax = fig.add_subplot(1,1,1)
-        time_perf_np = np.array(self.time_perf)
+        time_perf_np = np.array(self.time_perf) 
         columns = ["Wall clock time [s]","Components","Neighbors"]
+        # Convert to pandas data frame
         time_perf_pd = pd.DataFrame(data=time_perf_np,columns=columns)
         sns.set_style("darkgrid")
+        # Plot the graph 
         sns.lineplot(data=time_perf_pd,
                      x="Neighbors",
                      y="Wall clock time [s]",
@@ -347,6 +500,17 @@ class Assessment():
         plt.close("all")
 
     def generate_contour(self,z,fig,subplot,title,cmap="viridis"):
+        """
+        Goal:
+        Plot a countour to visualize the metrics with KNN 
+        Inputs:
+        z = np.ndarray - size range_neighors x range_compo - metric value
+        fig = figure object matplotlib
+        subplot = list of size 3 - where the graph sould be plotted
+        title = string - title of the graph 
+        cmap = string - color map
+        Outputs:
+        """
         ax = fig.add_subplot(*subplot)
         cs = ax.contourf(self.x,self.y,z,cmap=cmap)
         ax.set_xlabel("Number of components",fontsize=12)
@@ -356,6 +520,15 @@ class Assessment():
         plt.colorbar(cs,ax=ax)
 
     def generate_all(self,size=[12,10],save_file=None):
+        """
+        Goal:
+        Generate the four contours for the two metrics associated to KNN
+        (two contours by metric)
+        Inputs:
+        size = list of size é - size of the graph
+        save_file = string - save the file at "figures/save_file.svg"
+        Outputs:
+        """
         fig = plt.figure(figsize=size)
         self.generate_contour(self.KNN_accu,
                               fig,[2,2,1],
