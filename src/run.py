@@ -12,7 +12,7 @@ best_neighbors_LLE_semi = None
 best_neighbors_MLLE_semi = None
 best_components_MLLE_semi = None
 semi_data_set = True
-full_data_set = True
+full_data_set = False
 
 # Define the parameters for the comparison
 san_check = True
@@ -20,14 +20,14 @@ k = 5
 run = 1
 KNN_neigh = 10
 min_components, max_components, step_components = 1,8,1
-min_neigh_LLE, max_neigh_LLE, step_neigh_LLE = 25,801,25
-min_neigh_MLLE, max_neigh_MLLE, step_neigh_MLLE = 15,451,15
+min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 70,801,40
+min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 70,451,40
 
 # Let's the code do the rest
 sns.set_style("darkgrid")
 range_components = np.arange(min_components,max_components,step_components)
-range_neighbors_LLE = np.arange(min_neigh_LLE,max_neigh_LLE,step_neigh_LLE)
-range_neighbors_MLLE = np.arange(min_neigh_MLLE,max_neigh_MLLE,step_neigh_MLLE)
+range_neighbors_LLE = np.linspace(min_neigh_LLE,max_neigh_LLE,nb_neigh_LLE,dtype=int)
+range_neighbors_MLLE = np.linspace(min_neigh_MLLE,max_neigh_MLLE,nb_neigh_MLLE,dtype=int)
 
 print("Import the data set \n")
 # Import the data set 
@@ -58,7 +58,9 @@ if full_data_set:
         LLE_algo.find_hyper()
         LLE_algo.plot_cumulative_error(title="LLE Reconstruction Error",save_file="LLE_error_metric_full_set")
         LLE_algo.generate_all(save_file="LLE_KNN_metric_full_set")
-        LLE_algo.plot_time_perf(title="LLE time performances",save_file="LLE_time_perf_full_set")
+        LLE_algo.plot_time_perf(title="LLE time performances",
+                                save_file="LLE_time_perf_full_set",
+                                save_data="LLE_time_perf_full_set")
 
         print("\nGraphs saved in the figures folder \n")
 
@@ -67,7 +69,9 @@ if full_data_set:
         MLLE_algo.find_hyper()
         MLLE_algo.plot_cumulative_error(title = "MLLE Reconstruction Error",save_file="MLLE_error_metric_full_set")
         MLLE_algo.generate_all(save_file="MLLE_KNN_metric_full_set")
-        MLLE_algo.plot_time_perf(title="MLLE time performances",save_file="MLLE_time_perf_full_set")
+        MLLE_algo.plot_time_perf(title="MLLE time performances",
+                                 save_file="MLLE_time_perf_full_set",
+                                 save_data="MLLE_time_perf_full_set")
 
 
         print("\nGraphs saved in the figures folder \n")
@@ -94,8 +98,8 @@ if semi_data_set:
     dataset = split_two(data_np)
 
     # Initialize the objects
-    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,san_check=True)
-    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",san_check=True)
+    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,check=san_check)
+    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",check=san_check)
 
     if hyperparams_search:
         ############ LLE ############
@@ -104,7 +108,9 @@ if semi_data_set:
         LLE_algo.find_hyper()
         LLE_algo.plot_cumulative_error(title = "LLE Reconstruction Error",save_file="LLE_error_metric_semi_set")
         LLE_algo.generate_all(save_file="LLE_KNN_metric_semi_set")
-        LLE_algo.plot_time_perf(title="LLE time performances",save_file="LLE_time_perf_semi_set")
+        LLE_algo.plot_time_perf(title="LLE time performances",
+                                save_file="LLE_time_perf_semi_set",
+                                save_data="LLE_time_perf_semi_set")
 
         print("Graphs saved in the figures folder")
 
@@ -113,7 +119,9 @@ if semi_data_set:
         MLLE_algo.find_hyper()
         MLLE_algo.plot_cumulative_error(title = "MLLE Reconstruction Error",save_file="MLLE_error_metric_semi_set")
         MLLE_algo.generate_all(save_file="MLLE_KNN_metric_semi_set")
-        MLLE_algo.plot_time_perf(title="MLLE time performances",save_file="MLLE_time_perf_semi_set")
+        MLLE_algo.plot_time_perf(title="MLLE time performances",
+                                 save_file="MLLE_time_perf_semi_set",
+                                 save_data="MLLE_time_perf_semi_set")
 
         print("Graphs saved in the figures folder")
 

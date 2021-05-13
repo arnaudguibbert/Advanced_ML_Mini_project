@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 from time import perf_counter
 import matplotlib.pyplot as plt
+from sklearn import neighbors
 from sklearn.manifold import LocallyLinearEmbedding as LLE
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import LinearSVC as SVC
@@ -332,6 +333,10 @@ class Assessment():
         save_file = string - save the file at "figures/save_file.svg"
         Outputs:
         """
+        if self.norm: # Normalize the data
+            mydata,_,_ = normalize(self.data)
+        else:
+            mydata = self.data.copy()
         fig = plt.figure(figsize=figsize) # Initialize the figure
         recon_err_np = np.array(self.recon_error) 
         recon_err_np[recon_err_np[:,0] < 0,0] *= -1 # Correct the instabilities of the eigen solvers
@@ -344,7 +349,26 @@ class Assessment():
         small_range_neighbors = self.range_neighbors[small_subset_neighbors]
         # Retain the samples that have the values retained for the hyperparameter
         recon_err_np = recon_err_np[np.isin(recon_err_np[:,2],small_range_neighbors)]
-        columns =  ["Cumulative sum of eigenvalues",
+        for j,neighbors in enumerate(small_range_neighbors):
+            try:
+                # Try with "arpack solver"
+                embedding = LLE(n_components=self.data.shape[1] - 1,
+                            n_neighbors=neighbors,
+                            method=self.method,
+                            max_iter=200,
+                            random_state=self.seed,
+                            eigen_solver="auto")
+                embedding.fit(mydata[:,1:]) # Dimensionality reduction
+            except ValueError:
+                # else Try with "dense" solver 
+                embedding = LLE(n_components=self.data.shape[1] - 1,
+                            n_neighbors=neighbors,
+                            method=self.method,
+                            eigen_solver="dense")
+                embedding.fit(mydata[:,1:]) # Dimensionality reduction
+            err = embedding.reconstruction_error_
+            recon_err_np[recon_err_np[:,2] == neighbors,0] /= err
+        columns =  ["Cumulative sum of eigenvalues (normalized)",
                     "Eigenvalue index",
                     "Number of neighbors"]
         # Convert to pandas 
@@ -355,7 +379,7 @@ class Assessment():
         # Plot the graph
         sns.lineplot(data=recon_err_pd,
                      x="Eigenvalue index",
-                     y="Cumulative sum of eigenvalues",
+                     y="Cumulative sum of eigenvalues (normalized)",
                      hue="Number of neighbors",
                      style="Number of neighbors",
                      palette=sns.color_palette("hls", line_keep),
@@ -467,7 +491,7 @@ class Assessment():
         plt.title(title)
         fig.show()
 
-    def plot_time_perf(self,title,save_file=None):
+    def plot_time_perf(self,title,save_file=None,save_data=None):
         """
         Goal:
         Plot the time performances with respect to the hyperparameter value (number of neighbors)
@@ -498,6 +522,8 @@ class Assessment():
         if save_file is not None:
             fig.savefig("figures/" + save_file + ".svg",dpi=200)
         plt.close("all")
+        if save_data is not None:
+            time_perf_pd.to_csv(save_data + ".csv",index=False)
 
     def generate_contour(self,z,fig,subplot,title,cmap="viridis"):
         """
