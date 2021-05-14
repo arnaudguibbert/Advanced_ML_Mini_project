@@ -4,18 +4,18 @@ import seaborn as sns
 from utils import split_two, Assessment
 
 # Choose what you want to run
-hyperparams_search = True
-best_neighbors_LLE_full = None
-best_neighbors_MLLE_full = None
-best_components_MLLE_full = None
-best_neighbors_LLE_semi = None
-best_neighbors_MLLE_semi = None
-best_components_MLLE_semi = None
+hyperparams_search = False
+best_neighbors_LLE_full = 700
+best_neighbors_MLLE_full = 275
+best_components_MLLE_full = 4
+best_neighbors_LLE_semi = 700
+best_neighbors_MLLE_semi = 150
+best_components_MLLE_semi = 6
 semi_data_set = True
-full_data_set = False
+full_data_set = True
 
 # Define the parameters for the comparison
-san_check = True
+san_check = False
 k = 5
 run = 1
 KNN_neigh = 10
