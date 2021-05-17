@@ -73,6 +73,14 @@ def split_two(data):
     final_data = np.concatenate(final_data,axis=0) # Concatenate the data set of each class
     return final_data
 
+def normalize_0_100(data,upper_bound=25):
+    data_norm = data.copy()
+    min = np.min(data_norm[:,-3:],axis=0,keepdims=True)
+    max = np.max(data_norm[:,-3:],axis=0,keepdims=True)
+    data_norm[:,-3:] = upper_bound*(data_norm[:,-3:] - min)/(max - min)
+    data_norm[:,1:] -= np.mean(data_norm[:,1:],axis=0,keepdims=True)
+    return data_norm
+
 def normalize(data,mean=None,std=None):
     """
     Goal:
@@ -431,7 +439,7 @@ class Assessment():
             fig.savefig("figures/" + save_file + ".svg",dpi=200)
         plt.close("all")
 
-    def generate_pairplot(self,neighbors,components,title,components_to_show=4,save_file=None):
+    def generate_pairplot(self,neighbors,components,title,norm_0100,components_to_show=4,save_file=None):
         """
         Goal:
         Generate a pairplot to visualize the distribution of the points

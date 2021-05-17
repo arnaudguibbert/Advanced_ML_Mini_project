@@ -1,27 +1,21 @@
-# Advanced_ML_mini_project
-Mini project in the scope of advanced machine learning class.
+# Description
 
-## 16/04/2021
+This project aims at comparing two dimensionality reduction methods: Locally Linear Embedding and one of its variant Modified Locally Linear Embedding. The performances of these algorithms are assessed on email data set. A full description about the way the evaluation was performed, is available in the report.pdf file. 
 
-### Récapitulatif:
-Présentation des données et attribution des tâches. 
-### Job à faire
-Everyone: Commenter le code  
-Nessreddine: Commencer à tester les algorithmes (LLE & MLLE) sur un data set complet  
-Arnaud: Tester des techniques pour prédire les data points manquants (Support Vector Regression)  
+# Folder organization
 
-## Getting Started 
+The project is divided in two folders: 
+ * Data folder where you will find the data set and its documentation.
 
-5000 face images have been selected among 200 000 face images. They are located into the Data\selected_images folder. Each image face belongs to one class among four classes. The classes are: 
-##### Class 1 : Eyeglasses
-##### Class 2 : Wearing Hat
-##### Class 3 : Wavy Hair
-##### Class 4 : Goatee
-Since the original images have a size of 3x218x178 (116 412 features), a small preprocessing is needed to divide at least by 10 this initial dimension. To do so the images are first converted to gray scale and then an average pooling filter of size (2x2) is appplied on the images. The final images have a size of 109x89 (9 701 features). You can visualize such a transformation by running the main.ipynb in the src folder. 
+ * src folder where you will find all the python files used to produce the results tackled in the report. 
 
-### Generate the data set
-The data set is not directly available on the repository (because too heavy 900 MB), only the images selected are available in the Data\selected_images folder. But no worries, to generate it the only thing you have to do is to run the preprocessing.py python file located in the Data folder. If you are working on Linux modify the first line of the code by setting "Linux = True". Then the dataset "data_frame.csv" will be created in the Data folder.  
+ More precisely the src folder contains two python files:
+ * utils.py : this file is containing all the useful functions/classes that are used to assess LLE and MLLE preformances. The prupose of each function/class is widely detailed in this file. 
 
-### Locally Linear Embeddings (LLE)
+ * run.py : this file is a script that will automatically reproduce the report results/graphs. All the graphs will be stored in the figures folder and the time data performances will be stored into the data_time folder. Going through the first lines of this file you will be able to choose some parameters for the evaluation of LLE and MLLE.  
 
-### Modified Locally Linear Embeddings (MLLE)
+# Reproduce results
+
+As it was tackled in the previous part, reproducing the results can be easily done by simply running the run.py file. The right parameters are already entered in the run.py file. Feel free to change them if you want. However be careful the time execution is high: for default parameters time execution was around 20 hours. The terminal will print logs to give insights on the progression. 
+
+# Additional information
