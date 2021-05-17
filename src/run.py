@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from utils import split_two, Assessment
+import os
+from utils import split_two, Assessment, plot_time_comparison
 
 # Choose what you want to run
 hyperparams_search = False
@@ -24,6 +25,12 @@ min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 70,801,40
 min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 70,451,40
 
 # Let's the code do the rest
+
+directories = ["figures","data_time"]
+for directory in directories:
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+
 sns.set_style("darkgrid")
 range_components = np.arange(min_components,max_components,step_components)
 range_neighbors_LLE = np.linspace(min_neigh_LLE,max_neigh_LLE,nb_neigh_LLE,dtype=int)
@@ -59,7 +66,6 @@ if full_data_set:
         LLE_algo.plot_cumulative_error(title="LLE Reconstruction Error",save_file="LLE_error_metric_full_set")
         LLE_algo.generate_all(save_file="LLE_KNN_metric_full_set")
         LLE_algo.plot_time_perf(title="LLE time performances",
-                                save_file="LLE_time_perf_full_set",
                                 save_data="LLE_time_perf_full_set")
 
         print("\nGraphs saved in the figures folder \n")
@@ -70,7 +76,6 @@ if full_data_set:
         MLLE_algo.plot_cumulative_error(title = "MLLE Reconstruction Error",save_file="MLLE_error_metric_full_set")
         MLLE_algo.generate_all(save_file="MLLE_KNN_metric_full_set")
         MLLE_algo.plot_time_perf(title="MLLE time performances",
-                                 save_file="MLLE_time_perf_full_set",
                                  save_data="MLLE_time_perf_full_set")
 
 
@@ -109,7 +114,6 @@ if semi_data_set:
         LLE_algo.plot_cumulative_error(title = "LLE Reconstruction Error",save_file="LLE_error_metric_semi_set")
         LLE_algo.generate_all(save_file="LLE_KNN_metric_semi_set")
         LLE_algo.plot_time_perf(title="LLE time performances",
-                                save_file="LLE_time_perf_semi_set",
                                 save_data="LLE_time_perf_semi_set")
 
         print("Graphs saved in the figures folder")
@@ -120,7 +124,6 @@ if semi_data_set:
         MLLE_algo.plot_cumulative_error(title = "MLLE Reconstruction Error",save_file="MLLE_error_metric_semi_set")
         MLLE_algo.generate_all(save_file="MLLE_KNN_metric_semi_set")
         MLLE_algo.plot_time_perf(title="MLLE time performances",
-                                 save_file="MLLE_time_perf_semi_set",
                                  save_data="MLLE_time_perf_semi_set")
 
         print("Graphs saved in the figures folder")
@@ -139,3 +142,17 @@ if semi_data_set:
                                     title="MLLE neighbors = " + str(best_neighbors_MLLE_semi) + " components = " + str(best_components_MLLE_semi),
                                     save_file="MLLE_pairplot_semi_set")
         print("Pairplot MLLE saved in the figures folder")
+
+files = ["data_time/LLE_time_perf_full_set.csv",
+         "data_time/MLLE_time_perf_full_set.csv",
+         "data_time/LLE_time_perf_semi_set.csv",
+         "data_time/MLLE_time_perf_semi_set.csv"]
+plot_time = True
+
+for file in files:
+    if not os.path.exists(file):
+        plot_time = False
+        break
+
+if plot_time:
+    plot_time_comparison(*files,save_file="time_performances_comparison")

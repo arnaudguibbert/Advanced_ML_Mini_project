@@ -3,16 +3,51 @@ import pandas as pd
 import seaborn as sns
 from time import perf_counter
 import matplotlib.pyplot as plt
-from sklearn import neighbors
 from sklearn.manifold import LocallyLinearEmbedding as LLE
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import LinearSVC as SVC
 from sklearn.metrics import f1_score
 from mpl_toolkits.mplot3d import Axes3D
 import warnings
-import plotly.graph_objects as go
 import plotly.express as px
 
+def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_semi,save_file=None):
+    fig = plt.figure(figsize=[12,7])
+    ax = fig.add_subplot(111)
+    data_LLE_full = pd.read_csv(path_LLE_full)
+    data_MLLE_full = pd.read_csv(path_MLLE_full)
+    data_LLE_semi = pd.read_csv(path_LLE_semi)
+    data_MLLE_semi = pd.read_csv(path_MLLE_semi)
+    data_LLE_full["type"] = [0]*data_LLE_full.shape[0]
+    data_MLLE_full["type"] = [1]*data_MLLE_full.shape[0]
+    data_LLE_semi["type"] = [2]*data_LLE_semi.shape[0]
+    data_MLLE_semi["type"] = [3]*data_MLLE_semi.shape[0]
+    full_data = pd.concat((data_LLE_full,
+                           data_LLE_semi,
+                           data_MLLE_full,
+                           data_MLLE_semi),ignore_index=True)
+    min_neighbors = (full_data.groupby(["type"]).max())["Neighbors"].min()
+    sns.set_style("darkgrid")
+    sns.lineplot(data=full_data,y="Wall clock time [s]",
+                 x="Neighbors",hue="type",ax=ax,
+                 palette=sns.color_palette("hls",4))
+    handles, labels = ax.get_legend_handles_labels()
+    true_labels = ["LLE (whole data set)",
+                   "MLLE (whole data set)",
+                   "LLE (semi data set)",
+                   "MLLE (semi data set)"]
+    labels = [true_labels[int(float(i))] for i in labels]
+    ax.set_title("Time performances comparison",fontsize=16)
+    ax.xaxis.label.set_fontsize(14)
+    ax.yaxis.label.set_fontsize(14)
+    ax.legend(handles,labels,
+              fontsize=12,
+              title=None,
+              title_fontsize=12,loc="upper left")
+    ax.set_xlim(70,800)
+    if save_file is not None:
+        fig.savefig("figures/" + save_file + ".svg")
+    
 
 def split_two(data):
     """
@@ -85,7 +120,6 @@ class Assessment():
         seed = int - seed for the random state of the eigen_solver to get reproducibility
         Outputs:
         """
-        warnings.filterwarnings('ignore')
         self.method = method
         self.range_compo = range_compo
         self.range_neighbors = range_neighbors
@@ -107,6 +141,7 @@ class Assessment():
         self.KNN_F1_std = np.empty_like(self.x).astype(float)
         # The time performances will be stored there
         self.time_perf = []
+        warnings.filterwarnings('ignore')
 
     def reset(self):
         """
@@ -523,7 +558,7 @@ class Assessment():
             fig.savefig("figures/" + save_file + ".svg",dpi=200)
         plt.close("all")
         if save_data is not None:
-            time_perf_pd.to_csv(save_data + ".csv",index=False)
+            time_perf_pd.to_csv("data_time/" + save_data + ".csv",index=False)
 
     def generate_contour(self,z,fig,subplot,title,cmap="viridis"):
         """
