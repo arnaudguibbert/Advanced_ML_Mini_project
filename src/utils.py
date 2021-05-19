@@ -7,7 +7,6 @@ from sklearn.manifold import LocallyLinearEmbedding as LLE
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import LinearSVC as SVC
 from sklearn.metrics import f1_score
-from mpl_toolkits.mplot3d import Axes3D
 import warnings
 import plotly.express as px
 
@@ -26,7 +25,6 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
                            data_LLE_semi,
                            data_MLLE_full,
                            data_MLLE_semi),ignore_index=True)
-    min_neighbors = (full_data.groupby(["type"]).max())["Neighbors"].min()
     sns.set_style("darkgrid")
     sns.lineplot(data=full_data,y="Wall clock time [s]",
                  x="Neighbors",hue="type",ax=ax,
@@ -44,7 +42,7 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
               fontsize=12,
               title=None,
               title_fontsize=12,loc="upper left")
-    ax.set_xlim(70,800)
+    ax.set_xlim(20,450)
     if save_file is not None:
         fig.savefig("figures/" + save_file + ".svg")
     
@@ -73,7 +71,7 @@ def split_two(data):
     final_data = np.concatenate(final_data,axis=0) # Concatenate the data set of each class
     return final_data
 
-def normalize_0_100(data,upper_bound=25):
+def normalize_0_100(data,upper_bound=40):
     data_norm = data.copy()
     min = np.min(data_norm[:,-3:],axis=0,keepdims=True)
     max = np.max(data_norm[:,-3:],axis=0,keepdims=True)
@@ -111,7 +109,8 @@ def normalize(data,mean=None,std=None):
 class Assessment():
 
     def __init__(self,data,range_compo,range_neighbors,
-                 method='standard',k=3,run=1,norm=True,KNN_neigh=10,check=True,seed=0):
+                 method='standard',k=3,run=1,KNN_neigh=10,
+                 check=True,seed=0,norm=True,norm_0100=False):
         """
         Goal:
         Inputs:
@@ -133,6 +132,7 @@ class Assessment():
         self.range_neighbors = range_neighbors
         self.data = data.copy()
         self.norm = norm
+        self.norm_0100 = norm_0100
         self.row_format = '{:<12}{:<12}{:<5}{:<25}{:<15}{:<10}{:<15}{:<10}{:<18}' # Define the display format
         self.k = k
         self.run = run 
@@ -241,6 +241,8 @@ class Assessment():
         print("Sanity check launched")
         if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
+        elif self.norm_0100:
+            mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
         index_remove = [] # Neighbors to remove
@@ -279,6 +281,8 @@ class Assessment():
         """
         if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
+        elif self.norm_0100:
+            mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
         # Header fo the logs
@@ -333,7 +337,7 @@ class Assessment():
                     elapsed = end - start # Compute the elapsed time
                     self.time_perf.append([elapsed,components,neighbors]) # Store the time performance
                     # Store the reconstruction error
-                    self.recon_error.append([embedding.reconstruction_error_,components,neighbors])
+                    self.recon_error.append([abs(embedding.reconstruction_error_),components,neighbors])
                     # Readd the classes to the reduced data
                     reduc_data = np.concatenate((mydata[:,[0]],reduc_data),axis=1)
                     # Get the k pairs of train/test sets
@@ -378,18 +382,23 @@ class Assessment():
         """
         if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
+        elif self.norm_0100:
+            mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
         fig = plt.figure(figsize=figsize) # Initialize the figure
-        recon_err_np = np.array(self.recon_error) 
-        recon_err_np[recon_err_np[:,0] < 0,0] *= -1 # Correct the instabilities of the eigen solvers
+        recon_err_np = np.array(self.recon_error)
         # Only 8 hyperparameter values are kept for the figure
-        line_keep = min(self.range_neighbors.shape[0],8) 
+        if self.method == "modified":
+            valid_neighbors_value = self.range_neighbors[self.range_neighbors > self.data.shape[1] - 1]
+        else:
+            valid_neighbors_value = self.range_neighbors
+        line_keep = min(valid_neighbors_value.shape[0],8) 
         # Perform a linspace to know which values to keep
-        small_subset_neighbors = np.linspace(0,self.range_neighbors.shape[0]-1,
+        small_subset_neighbors = np.linspace(0,valid_neighbors_value.shape[0]-1,
                                              line_keep,dtype=int)
-        # Extract the values to preserve
-        small_range_neighbors = self.range_neighbors[small_subset_neighbors]
+        # Extract the values to keep
+        small_range_neighbors = valid_neighbors_value[small_subset_neighbors]
         # Retain the samples that have the values retained for the hyperparameter
         recon_err_np = recon_err_np[np.isin(recon_err_np[:,2],small_range_neighbors)]
         for j,neighbors in enumerate(small_range_neighbors):
@@ -439,7 +448,7 @@ class Assessment():
             fig.savefig("figures/" + save_file + ".svg",dpi=200)
         plt.close("all")
 
-    def generate_pairplot(self,neighbors,components,title,norm_0100,components_to_show=4,save_file=None):
+    def generate_pairplot(self,neighbors,components,title,components_to_show=4,save_file=None):
         """
         Goal:
         Generate a pairplot to visualize the distribution of the points
@@ -454,6 +463,8 @@ class Assessment():
         """
         if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
+        elif self.norm_0100:
+            mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
         try:
@@ -504,8 +515,10 @@ class Assessment():
         Inputs:
         Outputs:
         """
-        if self.norm:
+        if self.norm: # Normalize the data
             mydata,_,_ = normalize(self.data)
+        elif self.norm_0100:
+            mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
         try:

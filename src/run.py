@@ -6,23 +6,25 @@ from utils import split_two, Assessment, plot_time_comparison
 
 # Choose what you want to run
 hyperparams_search = False
-best_neighbors_LLE_full = 700
-best_neighbors_MLLE_full = 275
-best_components_MLLE_full = 4
-best_neighbors_LLE_semi = 700
-best_neighbors_MLLE_semi = 150
-best_components_MLLE_semi = 6
-semi_data_set = True
-full_data_set = True
+best_neighbors_LLE_full = None
+best_neighbors_MLLE_full = None
+best_components_MLLE_full = None
+best_neighbors_LLE_semi = None
+best_neighbors_MLLE_semi = None
+best_components_MLLE_semi = None
+semi_data_set = False
+full_data_set = False
 
 # Define the parameters for the comparison
+norm = False
+norm_0100 = True
 san_check = False
 k = 5
 run = 1
 KNN_neigh = 10
 min_components, max_components, step_components = 1,8,1
-min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 70,801,40
-min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 70,451,40
+min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 20,451,50
+min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 20,451,50
 
 # Let's the code do the rest
 
@@ -35,6 +37,7 @@ sns.set_style("darkgrid")
 range_components = np.arange(min_components,max_components,step_components)
 range_neighbors_LLE = np.linspace(min_neigh_LLE,max_neigh_LLE,nb_neigh_LLE,dtype=int)
 range_neighbors_MLLE = np.linspace(min_neigh_MLLE,max_neigh_MLLE,nb_neigh_MLLE,dtype=int)
+range_neighbors_MLLE = range_neighbors_MLLE[range_neighbors_MLLE != 63]
 
 print("Import the data set \n")
 # Import the data set 
@@ -55,8 +58,12 @@ if full_data_set:
     print("Evaluation on the full data set, Initialization of the objects \n")
 
     # Initialize the objects
-    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,check=san_check)
-    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",check=san_check)
+    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,
+                          run=run,KNN_neigh=KNN_neigh,
+                          check=san_check,norm=norm,norm_0100=norm_0100)
+    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,
+                           run=run,KNN_neigh=KNN_neigh,method="modified",
+                           check=san_check,norm=norm,norm_0100=norm_0100)
 
     if hyperparams_search:
         ############ LLE ############
@@ -103,8 +110,12 @@ if semi_data_set:
     dataset = split_two(data_np)
 
     # Initialize the objects
-    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,run=run,KNN_neigh=KNN_neigh,check=san_check)
-    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,run=run,KNN_neigh=KNN_neigh,method="modified",check=san_check)
+    LLE_algo = Assessment(dataset,range_components,range_neighbors_LLE,k=k,
+                          run=run,KNN_neigh=KNN_neigh,
+                          check=san_check,norm=norm,norm_0100=norm_0100)
+    MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,
+                           run=run,KNN_neigh=KNN_neigh,method="modified",
+                           check=san_check,norm=norm,norm_0100=norm_0100)
 
     if hyperparams_search:
         ############ LLE ############
