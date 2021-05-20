@@ -7,8 +7,86 @@ from sklearn.manifold import LocallyLinearEmbedding as LLE
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.svm import LinearSVC as SVC
 from sklearn.metrics import f1_score
+from scipy.spatial.distance import pdist
 import warnings
 import plotly.express as px
+
+def plot_residual_variance(data_path,title,figsize=[12,7],save_file=None,compo_to_retain=[2,4]):
+    """
+    Goal:
+    Inputs:
+    Outputs:
+    """
+    fig = plt.figure(figsize=figsize) # Initialize the figure
+    residual_pd = pd.read_csv(data_path)
+    residual_pd = residual_pd.rename(columns={"Output dimension":"Output_dimension"})
+    condition = ["Output_dimension == " + str(i) for i in compo_to_retain]
+    condition = " | ".join(condition)
+    residual_pd = residual_pd.query(condition)
+    residual_pd = residual_pd.rename(columns={"Output_dimension":"Output dimension"})
+    ax = fig.add_subplot(1,1,1)
+    # Set darkgrid style
+    sns.set_style("darkgrid")
+    # Plot the graph
+    sns.lineplot(data=residual_pd,
+                    x="Number of neighbors",
+                    y="Residual variance",
+                    hue="Output dimension",
+                    palette=sns.color_palette("hls", len(compo_to_retain)),
+                    ci="sd",
+                    ax=ax)
+    max_neigh = residual_pd["Number of neighbors"].max()
+    min_neigh = residual_pd["Number of neighbors"].min()
+    ax.set_xlim(min_neigh,max_neigh)
+    ax.set_title(title,fontsize=16)
+    ax.xaxis.label.set_fontsize(14)
+    ax.yaxis.label.set_fontsize(14)
+    ax.legend(fontsize=12,title="Output dimension",title_fontsize=12,loc="best")
+    if save_file is not None:
+        fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
+        fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
+    plt.close("all")
+
+def plot_cumulative_error(data_path,title,figsize=[12,7],save_file=None,compo_to_retain=[2,4]):
+    """
+    Goal:
+    Plot the reconstruction error curve for different value of the hyperparameter (number of neighbors)
+    Inputs:
+    title = string - title of the graph
+    figsize = list of size 2 - size of the graph
+    save_file = string - save the file at "figures/save_file.svg"
+    Outputs:
+    """
+    fig = plt.figure(figsize=figsize) # Initialize the figure
+    residual_pd = pd.read_csv(data_path)
+    residual_pd = residual_pd.rename(columns={"Output dimension":"Output_dimension"})
+    condition = ["Output_dimension == " + str(i) for i in compo_to_retain]
+    condition = " | ".join(condition)
+    residual_pd = residual_pd.query(condition)
+    residual_pd = residual_pd.rename(columns={"Output_dimension":"Output dimension"})
+    ax = fig.add_subplot(1,1,1)
+    # Set darkgrid style
+    sns.set_style("darkgrid")
+    # Plot the graph
+    sns.lineplot(data=residual_pd,
+                    x="Number of neighbors",
+                    y="Reconstruction error",
+                    hue="Output dimension",
+                    palette=sns.color_palette("hls", len(compo_to_retain)),
+                    ci="sd",
+                    ax=ax)
+    max_neigh = residual_pd["Number of neighbors"].max()
+    min_neigh = residual_pd["Number of neighbors"].min()
+    ax.set_yscale('log')
+    ax.set_xlim(min_neigh,max_neigh)
+    ax.set_title(title,fontsize=16)
+    ax.xaxis.label.set_fontsize(14)
+    ax.yaxis.label.set_fontsize(14)
+    ax.legend(fontsize=12,title="Output dimension",title_fontsize=12,loc="best")
+    if save_file is not None:
+        fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
+        fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
+    plt.close("all")
 
 def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_semi,save_file=None):
     fig = plt.figure(figsize=[12,7])
@@ -35,6 +113,9 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
                    "LLE (semi data set)",
                    "MLLE (semi data set)"]
     labels = [true_labels[int(float(i))] for i in labels]
+    max_neigh = full_data["Neighbors"].max()
+    min_neigh = full_data["Neighbors"].min()
+    ax.set_xlim(min_neigh,max_neigh)
     ax.set_title("Time performances comparison",fontsize=16)
     ax.xaxis.label.set_fontsize(14)
     ax.yaxis.label.set_fontsize(14)
@@ -42,10 +123,30 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
               fontsize=12,
               title=None,
               title_fontsize=12,loc="upper left")
-    ax.set_xlim(20,450)
     if save_file is not None:
-        fig.savefig("figures/" + save_file + ".svg")
-    
+        fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
+        fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
+
+def residual_correlation(DX,DY,X_norm=False,Y_norm=True):
+    """
+    Goal:
+    Inputs:
+    DX = np.array - size M(M-1)/2
+    DY = np.array - size M(M-1)/2
+    Outputs:
+    rh
+    """
+    if X_norm:
+        DX_norm = (DX - np.mean(DX))/np.std(DX)
+    else:
+        DX_norm = DX
+    if Y_norm:
+        DY_norm = (DY - np.mean(DY))/np.std(DY)
+    else:
+        DY_norm = DY
+    rho = np.mean(DX_norm*DY_norm)
+    residual = 1 - rho**2
+    return residual
 
 def split_two(data):
     """
@@ -109,7 +210,7 @@ def normalize(data,mean=None,std=None):
 class Assessment():
 
     def __init__(self,data,range_compo,range_neighbors,
-                 method='standard',k=3,run=1,KNN_neigh=10,
+                 method='standard',k=3,KNN_neigh=10,
                  check=True,seed=0,norm=True,norm_0100=False):
         """
         Goal:
@@ -133,15 +234,15 @@ class Assessment():
         self.data = data.copy()
         self.norm = norm
         self.norm_0100 = norm_0100
-        self.row_format = '{:<12}{:<12}{:<5}{:<25}{:<15}{:<10}{:<15}{:<10}{:<18}' # Define the display format
+        self.row_format = '{:<12}{:<12}{:<25}{:<25}{:<20}' # Define the display format
         self.k = k
-        self.run = run 
         self.KNN_neigh = KNN_neigh
         self.seed = seed
         if check:
             self.sanity_check()
         self.x , self.y = np.meshgrid(self.range_compo, self.range_neighbors)
         self.recon_error = [] # The reconstruction error is stored here
+        self.residual = [] # Residual variance will be stored there
         # The KNN metric will be stored there
         self.KNN_accu = np.empty_like(self.x).astype(float)
         self.KNN_F1 = np.empty_like(self.x).astype(float)
@@ -160,6 +261,7 @@ class Assessment():
         """
         self.time_perf = []
         self.recon_error = []
+        self.residual = [] # Residual variance will be stored there
         self.KNN_accu = np.empty_like(self.x).astype(float)
         self.KNN_F1 = np.empty_like(self.x).astype(float)
         self.KNN_accu_std = np.empty_like(self.x).astype(float)
@@ -285,15 +387,13 @@ class Assessment():
             mydata = normalize_0_100(self.data)
         else:
             mydata = self.data.copy()
+        Dist_X = pdist(mydata[:,1:])
+        Dist_X = (Dist_X - np.mean(Dist_X))/np.std(Dist_X)
         # Header fo the logs
         header = ["Components",
                   "Neighbors",
-                  "Run",
                   "Reconstruction error",
-                  "KNN accuracy",
-                  "KNN F1",
-                  "STD accuracy",
-                  "STD F1",
+                  "Residual Variance",
                   "Wall clock time"]
         subheader = ["-"*len(head) for head in header]
         # Display the header
@@ -309,144 +409,54 @@ class Assessment():
                     self.KNN_F1[j,i] = 0
                     self.KNN_accu[j,i] = 0
                     continue
-                KNN_F1_run = np.empty(self.run)
-                KNN_accu_run = np.empty(self.run)
-                KNN_F1_std_run = np.empty(self.run)
-                KNN_accu_std_run = np.empty(self.run)
-                for run_index in range(self.run):
-                    try:
-                        # Try with "arpack solver"
-                        start = perf_counter() # start the chrono
-                        embedding = LLE(n_components=components,
-                                    n_neighbors=neighbors,
-                                    method=self.method,
-                                    max_iter=200,
-                                    random_state=self.seed,
-                                    eigen_solver="auto")
-                        reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
-                        end = perf_counter() # Stop the chrono
-                    except ValueError:
-                        start = perf_counter() # Start the chrono
-                        # else Try with "dense" solver 
-                        embedding = LLE(n_components=components,
-                                    n_neighbors=neighbors,
-                                    method=self.method,
-                                    eigen_solver="dense")
-                        reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
-                        end = perf_counter() # Stop the chrono
-                    elapsed = end - start # Compute the elapsed time
-                    self.time_perf.append([elapsed,components,neighbors]) # Store the time performance
-                    # Store the reconstruction error
-                    self.recon_error.append([abs(embedding.reconstruction_error_),components,neighbors])
-                    # Readd the classes to the reduced data
-                    reduc_data = np.concatenate((mydata[:,[0]],reduc_data),axis=1)
-                    # Get the k pairs of train/test sets
-                    train_sets, test_sets = self.crossksets(reduc_data)
-                    accu_temp_KNN = np.empty(self.k) # Initialize the accuracy vector
-                    F1_temp_KNN = np.empty(self.k) # Initialize the F1 vector
-                    for s,train in enumerate(train_sets): # Compute k times the metrics on different data set
-                        accu_temp_KNN[s], F1_temp_KNN[s] = self.KNN_metric(train,test_sets[s])
-                    # Compute the means
-                    KNN_accu_run[run_index] = np.mean(accu_temp_KNN) 
-                    KNN_F1_run[run_index] = np.mean(F1_temp_KNN)
-                    # Compute the standard deviations
-                    KNN_accu_std_run[run_index] = np.std(accu_temp_KNN)
-                    KNN_F1_std_run[run_index] = np.std(F1_temp_KNN)
-                    # Row to be displayed
-                    row = [components,
-                           neighbors,
-                           run_index,
-                           self.recon_error[-1][0],
-                           round(KNN_accu_run[run_index],2),
-                           round(KNN_F1_run[run_index],2),
-                           round(KNN_accu_std_run[run_index],2),
-                           round(KNN_F1_std_run[run_index],2),
-                           round(elapsed,1)]
-                    # Display the row
-                    print(self.row_format.format(*row))
+                try:
+                    # Try with "arpack solver"
+                    start = perf_counter() # start the chrono
+                    embedding = LLE(n_components=components,
+                                n_neighbors=neighbors,
+                                method=self.method,
+                                max_iter=200,
+                                random_state=self.seed,
+                                eigen_solver="auto")
+                    reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
+                    end = perf_counter() # Stop the chrono
+                except ValueError:
+                    start = perf_counter() # Start the chrono
+                    # else Try with "dense" solver 
+                    embedding = LLE(n_components=components,
+                                n_neighbors=neighbors,
+                                method=self.method,
+                                eigen_solver="dense")
+                    reduc_data = embedding.fit_transform(mydata[:,1:]) # Dimensionality reduction
+                    end = perf_counter() # Stop the chrono
+                Dist_Y = pdist(reduc_data)
+                residual_var = residual_correlation(Dist_X,Dist_Y)
+                self.residual.append([residual_var,components,neighbors])
+                elapsed = end - start # Compute the elapsed time
+                self.time_perf.append([elapsed,components,neighbors]) # Store the time performance
+                # Store the reconstruction error
+                self.recon_error.append([abs(embedding.reconstruction_error_),components,neighbors])
+                # Readd the classes to the reduced data
+                reduc_data = np.concatenate((mydata[:,[0]],reduc_data),axis=1)
+                # Get the k pairs of train/test sets
+                train_sets, test_sets = self.crossksets(reduc_data)
+                accu_temp_KNN = np.empty(self.k) # Initialize the accuracy vector
+                F1_temp_KNN = np.empty(self.k) # Initialize the F1 vector
+                for s,train in enumerate(train_sets): # Compute k times the metrics on different data set
+                    accu_temp_KNN[s], F1_temp_KNN[s] = self.KNN_metric(train,test_sets[s])
                 # Compute the mean of the metrics over different run for the space if run = 1 does not change anything
-                self.KNN_F1_std[j,i] = np.mean(KNN_F1_std_run)
-                self.KNN_accu_std[j,i] = np.mean(KNN_accu_std_run)
-                self.KNN_F1[j,i] = np.mean(KNN_F1_run)
-                self.KNN_accu[j,i] = np.mean(KNN_accu_run)
-
-    def plot_cumulative_error(self,title,figsize=[12,7],save_file=None):
-        """
-        Goal:
-        Plot the reconstruction error curve for different value of the hyperparameter (number of neighbors)
-        Inputs:
-        title = string - title of the graph
-        figsize = list of size 2 - size of the graph
-        save_file = string - save the file at "figures/save_file.svg"
-        Outputs:
-        """
-        if self.norm: # Normalize the data
-            mydata,_,_ = normalize(self.data)
-        elif self.norm_0100:
-            mydata = normalize_0_100(self.data)
-        else:
-            mydata = self.data.copy()
-        fig = plt.figure(figsize=figsize) # Initialize the figure
-        recon_err_np = np.array(self.recon_error)
-        # Only 8 hyperparameter values are kept for the figure
-        if self.method == "modified":
-            valid_neighbors_value = self.range_neighbors[self.range_neighbors > self.data.shape[1] - 1]
-        else:
-            valid_neighbors_value = self.range_neighbors
-        line_keep = min(valid_neighbors_value.shape[0],8) 
-        # Perform a linspace to know which values to keep
-        small_subset_neighbors = np.linspace(0,valid_neighbors_value.shape[0]-1,
-                                             line_keep,dtype=int)
-        # Extract the values to keep
-        small_range_neighbors = valid_neighbors_value[small_subset_neighbors]
-        # Retain the samples that have the values retained for the hyperparameter
-        recon_err_np = recon_err_np[np.isin(recon_err_np[:,2],small_range_neighbors)]
-        for j,neighbors in enumerate(small_range_neighbors):
-            try:
-                # Try with "arpack solver"
-                embedding = LLE(n_components=self.data.shape[1] - 1,
-                            n_neighbors=neighbors,
-                            method=self.method,
-                            max_iter=200,
-                            random_state=self.seed,
-                            eigen_solver="auto")
-                embedding.fit(mydata[:,1:]) # Dimensionality reduction
-            except ValueError:
-                # else Try with "dense" solver 
-                embedding = LLE(n_components=self.data.shape[1] - 1,
-                            n_neighbors=neighbors,
-                            method=self.method,
-                            eigen_solver="dense")
-                embedding.fit(mydata[:,1:]) # Dimensionality reduction
-            err = embedding.reconstruction_error_
-            recon_err_np[recon_err_np[:,2] == neighbors,0] /= err
-        columns =  ["Cumulative sum of eigenvalues (normalized)",
-                    "Eigenvalue index",
-                    "Number of neighbors"]
-        # Convert to pandas 
-        recon_err_pd = pd.DataFrame(recon_err_np,columns=columns)
-        ax = fig.add_subplot(1,1,1)
-        # Set darkgrid style
-        sns.set_style("darkgrid")
-        # Plot the graph
-        sns.lineplot(data=recon_err_pd,
-                     x="Eigenvalue index",
-                     y="Cumulative sum of eigenvalues (normalized)",
-                     hue="Number of neighbors",
-                     style="Number of neighbors",
-                     palette=sns.color_palette("hls", line_keep),
-                     ci="sd",
-                     ax=ax)
-        ax.set_yscale('log')
-        ax.set_xlim(self.range_compo[0],self.range_compo[-1])
-        ax.set_title(title,fontsize=16)
-        ax.xaxis.label.set_fontsize(14)
-        ax.yaxis.label.set_fontsize(14)
-        ax.legend(fontsize=12,title="Number of neighbors",title_fontsize=12,loc="lower right")
-        ax.set_xticks(self.range_compo)
-        if save_file is not None:
-            fig.savefig("figures/" + save_file + ".svg",dpi=200)
-        plt.close("all")
+                self.KNN_F1_std[j,i] = np.std(F1_temp_KNN)
+                self.KNN_accu_std[j,i] = np.std(accu_temp_KNN)
+                self.KNN_F1[j,i] = np.mean(F1_temp_KNN)
+                self.KNN_accu[j,i] = np.mean(accu_temp_KNN)
+                # Row to be displayed
+                row = [components,
+                        neighbors,
+                        self.recon_error[-1][0],
+                        round(self.residual[-1][0],3),
+                        round(elapsed,1)]
+                # Display the row
+                print(self.row_format.format(*row))
 
     def generate_pairplot(self,neighbors,components,title,components_to_show=4,save_file=None):
         """
@@ -506,7 +516,8 @@ class Assessment():
         pairplot.fig.suptitle(title, fontsize=16)
         pairplot.fig.subplots_adjust(top=0.91)
         if save_file:
-            pairplot.fig.savefig("figures/" + save_file + ".svg",dpi=200)
+            pairplot.fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
+            pairplot.fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
         plt.close('all')
 
     def generate_3Dplot(self,neighbors,title,components=3):
@@ -579,7 +590,7 @@ class Assessment():
             fig.savefig("figures/" + save_file + ".svg",dpi=200)
         plt.close("all")
         if save_data is not None:
-            time_perf_pd.to_csv("data_time/" + save_data + ".csv",index=False)
+            time_perf_pd.to_csv("data/" + save_data + ".csv",index=False)
 
     def generate_contour(self,z,fig,subplot,title,cmap="viridis"):
         """
@@ -632,6 +643,32 @@ class Assessment():
             tit = "MLLE"
         fig.suptitle(tit + " additional metrics",fontsize=16)
         if save_file is not None:
-            fig.savefig("figures/" + save_file + ".svg",dpi=200)
+            fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
+            fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
         plt.close('all')
 
+    def save_all_data(self,save_data):
+        recon_error_np = np.array(self.recon_error)
+        residual_np = np.array(self.residual)
+        data = np.concatenate((recon_error_np[:,[0]],residual_np),axis=1)
+        columns =  ["Reconstruction error",
+                    "Residual variance",
+                    "Output dimension",
+                    "Number of neighbors"]
+        data_pd = pd.DataFrame(data,columns=columns)
+        KNN_acc_vec = self.KNN_accu.reshape(-1,1)
+        KNN_F1_vec = self.KNN_F1.reshape(-1,1)
+        KNN_acc_std_vec = self.KNN_accu_std.reshape(-1,1)
+        KNN_F1_std_vec = self.KNN_F1_std.reshape(-1,1)
+        compo_vec = self.x.reshape(-1,1)
+        neighbors_vec = self.y.reshape(-1,1)
+        data_KNN = np.concatenate((KNN_acc_vec,
+                                   KNN_F1_vec,KNN_acc_std_vec,
+                                   KNN_F1_std_vec,compo_vec,
+                                   neighbors_vec),axis=1)
+        columns_KNN = ["KNN Accuracy","KNN F1 measure",
+                       "KNN accuracy std","KNN F1 measure std",
+                       "Output dimension","Number of neighbors"]
+        data_KNN_pd = pd.DataFrame(data_KNN,columns=columns_KNN)
+        full_data = data_pd.merge(data_KNN_pd, on=["Output dimension","Number of neighbors"])
+        full_data.to_csv("data/" + save_data + ".csv",index=False)
