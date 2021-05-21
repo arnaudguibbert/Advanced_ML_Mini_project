@@ -22,9 +22,9 @@ norm_0100 = True
 san_check = True
 k = 5
 KNN_neigh = 10
-min_components, max_components, step_components = 1,200,100
+min_components, max_components, step_components = 1,5,1
 min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 5,200,100
-min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 5,15,3
+min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 5,200,100
 
 # Let's the code do the rest
 

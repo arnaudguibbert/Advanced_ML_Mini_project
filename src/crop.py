@@ -1,11 +1,9 @@
 import os 
 
-os.system("pdf-crop-margins figures/LLE_residual_metric_full_set.pdf -o figures/crop/LLE_residual_metric_full_set.pdf -p 0")
-os.system("pdf-crop-margins figures/MLLE_residual_metric_full_set.pdf -o figures/crop/MLLE_residual_metric_full_set.pdf -p 0")
-os.system("pdf-crop-margins figures/LLE_residual_metric_semi_set.pdf -o figures/crop/LLE_residual_metric_semi_set.pdf -p 0")
-os.system("pdf-crop-margins figures/MLLE_residual_metric_semi_set.pdf -o figures/crop/MLLE_residual_metric_semi_set.pdf -p 0")
-os.system("pdf-crop-margins figures/LLE_reconstruction_metric_full_set.pdf -o figures/crop/LLE_reconstruction_metric_full_set.pdf -p 0")
-os.system("pdf-crop-margins figures/MLLE_reconstruction_metric_full_set.pdf -o figures/crop/MLLE_reconstruction_metric_full_set.pdf -p 0")
-os.system("pdf-crop-margins figures/LLE_reconstruction_metric_semi_set.pdf -o figures/crop/LLE_reconstruction_metric_semi_set.pdf -p 0")
-os.system("pdf-crop-margins figures/MLLE_reconstruction_metric_semi_set.pdf -o figures/crop/MLLE_reconstruction_metric_semi_set.pdf -p 0")
-os.system("pdf-crop-margins figures/time_performances_comparison.pdf -o figures/crop/time_performances_comparison.pdf -p 0")
+mypath = "figures/pdf/"
+out_path = "figures/crop/"
+cmd_bas = "pdf-crop-margins "
+
+for file in os.listdir(mypath):
+    cmd = cmd_bas + mypath + file + " -o " + out_path + file + " -p 0"
+    os.system(cmd)
