@@ -14,12 +14,20 @@ import plotly.express as px
 def plot_residual_variance(data_path,title,figsize=[12,7],save_file=None,compo_to_retain=[2,4]):
     """
     Goal:
+    Plot the residual variance with respect to the number of neighbors
     Inputs:
+    data_path = string - path to the data where the residual variance values are stored
+    title = string - title of the graph
+    figsize = list of size 2 - dimensions of the figure
+    save_file = string - name of the file for the graph
+    compo_to_retain = list - specify for which components you want to plot the graph
     Outputs:
     """
     fig = plt.figure(figsize=figsize) # Initialize the figure
+    # Extract the data
     residual_pd = pd.read_csv(data_path)
     residual_pd = residual_pd.rename(columns={"Output dimension":"Output_dimension"})
+    # Retain the components specified 
     condition = ["Output_dimension == " + str(i) for i in compo_to_retain]
     condition = " | ".join(condition)
     residual_pd = residual_pd.query(condition)
@@ -42,6 +50,7 @@ def plot_residual_variance(data_path,title,figsize=[12,7],save_file=None,compo_t
     ax.xaxis.label.set_fontsize(14)
     ax.yaxis.label.set_fontsize(14)
     ax.legend(fontsize=12,title="Output dimension",title_fontsize=12,loc="best")
+    # Save the graphs in different formats
     if save_file is not None:
         fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
         fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
@@ -50,15 +59,19 @@ def plot_residual_variance(data_path,title,figsize=[12,7],save_file=None,compo_t
 def plot_cumulative_error(data_path,title,figsize=[12,7],save_file=None,compo_to_retain=[2,4]):
     """
     Goal:
-    Plot the reconstruction error curve for different value of the hyperparameter (number of neighbors)
+    Plot the reconstruction error with respect to the number of neighbors
     Inputs:
+    data_path = string - path to the data where the residual variance values are stored
     title = string - title of the graph
-    figsize = list of size 2 - size of the graph
-    save_file = string - save the file at "figures/save_file.svg"
+    figsize = list of size 2 - dimensions of the figure
+    save_file = string - name of the file for the graph
+    compo_to_retain = list - specify for which components you want to plot the graph
     Outputs:
     """
     fig = plt.figure(figsize=figsize) # Initialize the figure
+    # Extract the data
     residual_pd = pd.read_csv(data_path)
+    # Retain the components specified 
     residual_pd = residual_pd.rename(columns={"Output dimension":"Output_dimension"})
     condition = ["Output_dimension == " + str(i) for i in compo_to_retain]
     condition = " | ".join(condition)
@@ -83,14 +96,32 @@ def plot_cumulative_error(data_path,title,figsize=[12,7],save_file=None,compo_to
     ax.xaxis.label.set_fontsize(14)
     ax.yaxis.label.set_fontsize(14)
     ax.legend(fontsize=12,title="Output dimension",title_fontsize=12,loc="best")
+    # Save the graphs in different formats
     if save_file is not None:
         fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
         fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
     plt.close("all")
 
 def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_semi,save_file=None):
+    """
+    Goal:
+    Plot the wall clock time with respect to the number of neighbors
+    Plot four different curves:
+    * Wall clock time of LLE on the whole data set
+    * Wall clock time of MLLE on the whole data set
+    * Wall clock time of LLE on the semi data set
+    * Wall clock time of MLLE on the semi data set
+    Inputs:
+    path_LLE_full = string - path to the data where the wall clock time values are stored for LLE on the whole data set
+    path_MLLE_full = string - path to the data where the wall clock time values are stored for MLLE on the whole data set
+    path_LLE_semi = string - path to the data where the wall clock time values are stored for LLE on the semi data set
+    path_MLLE_semi = string - path to the data where the wall clock time values are stored for MLLE on the semi data set
+    save_file = string - name of the file for the graph
+    Outputs:
+    """
     fig = plt.figure(figsize=[12,7])
     ax = fig.add_subplot(111)
+    # Extract the data for each file
     data_LLE_full = pd.read_csv(path_LLE_full)
     data_MLLE_full = pd.read_csv(path_MLLE_full)
     data_LLE_semi = pd.read_csv(path_LLE_semi)
@@ -99,11 +130,13 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
     data_MLLE_full["type"] = [1]*data_MLLE_full.shape[0]
     data_LLE_semi["type"] = [2]*data_LLE_semi.shape[0]
     data_MLLE_semi["type"] = [3]*data_MLLE_semi.shape[0]
+    # Merge them in one data set
     full_data = pd.concat((data_LLE_full,
                            data_LLE_semi,
                            data_MLLE_full,
                            data_MLLE_semi),ignore_index=True)
     sns.set_style("darkgrid")
+    # Plot the graph
     sns.lineplot(data=full_data,y="Wall clock time [s]",
                  x="Neighbors",hue="type",ax=ax,
                  palette=sns.color_palette("hls",4))
@@ -123,6 +156,7 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
               fontsize=12,
               title=None,
               title_fontsize=12,loc="upper left")
+    # Save figure in different formats
     if save_file is not None:
         fig.savefig("figures/svg/" + save_file + ".svg",dpi=200)
         fig.savefig("figures/pdf/" + save_file + ".pdf",dpi=200)
@@ -130,12 +164,16 @@ def plot_time_comparison(path_LLE_full,path_MLLE_full,path_LLE_semi,path_MLLE_se
 def residual_correlation(DX,DY,X_norm=False,Y_norm=True):
     """
     Goal:
+    Compute the residual variance
     Inputs:
-    DX = np.array - size M(M-1)/2
-    DY = np.array - size M(M-1)/2
+    DX = np.array - size M(M-1)/2 - pairwise distance matrix flattened (only the upper diagonal)
+    DY = np.array - size M(M-1)/2 - pairwise distance matrix flattened (only the upper diagonal)
+    X_norm = Boolean - specify if it is necessary to set the mean to 0 and variance to 1 for DX
+    Y_norm = Boolean - specify if it is necessary to set the mean to 0 and variance to 1 for DY
     Outputs:
-    rh
+    residual = float - residual variance 
     """
+    # Normalize if necessary
     if X_norm:
         DX_norm = (DX - np.mean(DX))/np.std(DX)
     else:
@@ -144,6 +182,7 @@ def residual_correlation(DX,DY,X_norm=False,Y_norm=True):
         DY_norm = (DY - np.mean(DY))/np.std(DY)
     else:
         DY_norm = DY
+    # Compute the correlation coefficient
     rho = np.mean(DX_norm*DY_norm)
     residual = 1 - rho**2
     return residual
@@ -173,10 +212,20 @@ def split_two(data):
     return final_data
 
 def normalize_0_100(data,upper_bound=40):
-    data_norm = data.copy()
+    """
+    Goal:
+    Rescale and center the last three features in [0,upper_bound]
+    Inputs:
+    data = data to be normalized
+    upper_bound = float - upper bound of the rescaling
+    Outputs:
+    """
+    data_norm = data.copy() # copy to avoid any issue with the original data
     min = np.min(data_norm[:,-3:],axis=0,keepdims=True)
     max = np.max(data_norm[:,-3:],axis=0,keepdims=True)
+    # Normalize into [0,upper_bound]
     data_norm[:,-3:] = upper_bound*(data_norm[:,-3:] - min)/(max - min)
+    # Center the data
     data_norm[:,1:] -= np.mean(data_norm[:,1:],axis=0,keepdims=True)
     return data_norm
 
@@ -299,6 +348,7 @@ class Assessment():
     def SVM_metric(self,train_set,test_set):
         """
         Goal:
+        Actually this function was no longer used 
         Inputs:
         Outputs:
         """
