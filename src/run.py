@@ -8,27 +8,36 @@ from utils import plot_time_comparison, plot_cumulative_error, plot_residual_var
 Linux = True # Specify if you work on Linux or windows
 # Choose what you want to run
 hyperparams_search = True
-best_neighbors_LLE_full = 87
-best_neighbors_MLLE_full = 91
-best_components_MLLE_full = 4
+best_neighbors_LLE_full = None
+best_neighbors_MLLE_full = None
+best_components_MLLE_full = None
 best_neighbors_LLE_semi = None
 best_neighbors_MLLE_semi = None
 best_components_MLLE_semi = None
 semi_data_set = True
-full_data_set = False
+full_data_set = True
 
 # Define the parameters for the comparison
-runs_semi_data_set = 4
+runs_semi_data_set = 5
 norm = False
 norm_0100 = True
-san_check = False
+san_check = True
 k = 5
 KNN_neigh = 10
 min_components, max_components, step_components = 1,5,1
-min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 5,15,3
-min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 5,15,3
+min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE = 5,200,100
+min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE = 5,200,100
 
 # Let's the code do the rest
+
+print("################# PARAMETERS FOR THE RUN #################")
+
+print("hyperparameter search : ",hyperparams_search)
+print("Full data set evaluation : ",full_data_set)
+print("Semi data set evaluation : ",semi_data_set)
+print("Parameters LLE : ",min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE)
+print("Parameters MLLE : ",min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE)
+print("Sanity Check : ",san_check)
 
 directories = ["figures","data","figures/svg","figures/pdf"]
 for directory in directories:
