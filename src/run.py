@@ -38,6 +38,7 @@ print("Semi data set evaluation : ",semi_data_set)
 print("Parameters LLE : ",min_neigh_LLE, max_neigh_LLE, nb_neigh_LLE)
 print("Parameters MLLE : ",min_neigh_MLLE, max_neigh_MLLE, nb_neigh_MLLE)
 print("Sanity Check : ",san_check)
+print("\n")
 
 directories = ["figures","data","figures/svg","figures/pdf"]
 for directory in directories:
