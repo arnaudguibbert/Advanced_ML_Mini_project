@@ -41,7 +41,7 @@ def plot_residual_variance(data_path,title,figsize=[12,7],save_file=None,compo_t
                     y="Residual variance",
                     hue="Output dimension",
                     palette=sns.color_palette("hls", len(compo_to_retain)),
-                    ci="sd",
+                    ci=90,
                     ax=ax)
     max_neigh = residual_pd["Number of neighbors"].max()
     min_neigh = residual_pd["Number of neighbors"].min()
@@ -86,7 +86,7 @@ def plot_cumulative_error(data_path,title,figsize=[12,7],save_file=None,compo_to
                     y="Reconstruction error",
                     hue="Output dimension",
                     palette=sns.color_palette("hls", len(compo_to_retain)),
-                    ci="sd",
+                    ci=90,
                     ax=ax)
     max_neigh = residual_pd["Number of neighbors"].max()
     min_neigh = residual_pd["Number of neighbors"].min()

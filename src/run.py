@@ -7,13 +7,11 @@ from utils import plot_time_comparison, plot_cumulative_error, plot_residual_var
 
 Linux = True # Specify if you work on Linux or windows
 # Choose what you want to run
-hyperparams_search = True
-best_neighbors_LLE_full = None
-best_neighbors_MLLE_full = None
-best_components_MLLE_full = None
-best_neighbors_LLE_semi = None
-best_neighbors_MLLE_semi = None
-best_components_MLLE_semi = None
+hyperparams_search = False
+best_neighbors_LLE_full = 140
+best_neighbors_MLLE_full = 91
+best_neighbors_LLE_semi = 103
+best_neighbors_MLLE_semi = 50
 semi_data_set = True
 full_data_set = True
 
@@ -21,7 +19,7 @@ full_data_set = True
 runs_semi_data_set = 5
 norm = False
 norm_0100 = True
-san_check = True
+san_check = False
 k = 5
 KNN_neigh = 10
 min_components, max_components, step_components = 1,5,1
@@ -110,10 +108,10 @@ if full_data_set:
         print("\n################# Pairplot LLE saved in the figures folder #################\n")
 
 
-    if best_neighbors_MLLE_full is not None and best_components_MLLE_full is not None:
+    if best_neighbors_MLLE_full is not None:
         MLLE_algo.generate_pairplot(best_neighbors_MLLE_full,
-                                    best_components_MLLE_full,
-                                    title="MLLE neighbors = " + str(best_neighbors_MLLE_full) + " components = " + str(best_components_MLLE_full),
+                                    4,
+                                    title="MLLE neighbors = " + str(best_neighbors_MLLE_full),
                                     save_file="MLLE_pairplot_full_set")
         print("\n################# Pairplot MLLE saved in the figures folder #################\n")
 
@@ -224,15 +222,15 @@ if semi_data_set:
         print("\n################# Pairplot LLE saved in the figures folder #################\n")
 
 
-    if best_neighbors_MLLE_semi is not None and best_components_MLLE_semi is not None:
+    if best_neighbors_MLLE_semi is not None:
 
         MLLE_algo = Assessment(dataset,range_components,range_neighbors_MLLE,k=k,
                             KNN_neigh=KNN_neigh,method="modified",
                             check=san_check,norm=norm,norm_0100=norm_0100)
 
         MLLE_algo.generate_pairplot(best_neighbors_MLLE_full,
-                                    best_components_MLLE_full,
-                                    title="MLLE neighbors = " + str(best_neighbors_MLLE_semi) + " components = " + str(best_components_MLLE_semi),
+                                    4,
+                                    title="MLLE neighbors = " + str(best_neighbors_MLLE_semi),
                                     save_file="MLLE_pairplot_semi_set")
 
         print("\n################# Pairplot MLLE saved in the figures folder #################\n")
